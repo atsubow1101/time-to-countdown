@@ -4,503 +4,184 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 <title>ひとりごとメモ</title>
-
-<!-- PWA -->
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#F7F4ED" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="ひとりごとメモ" />
-
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
-/>
-
 <style>
-  html, body, #root {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #F7F4ED;
-    overscroll-behavior: none;
-  }
-  * { box-sizing: border-box; }
-  body {
-    /* avoid the iOS PWA top notch / bottom home bar eating content */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#F7F4ED;font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:#2B2A28;}
+body{display:flex;flex-direction:column;height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
+#header{padding:14px 16px 10px;border-bottom:1px solid #E4DFD2;background:#F7F4ED;flex-shrink:0;}
+#header h1{font-size:18px;font-weight:700;}
+#header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+#counter{font-size:11px;color:#9CA89A;}
+#filters{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid #E4DFD2;background:transparent;color:#6B6A66;cursor:pointer;}
+.filter-btn.active{background:#FF6B4A;border-color:#FF6B4A;color:#fff;}
+#scroll{flex:1;overflow-y:auto;padding:14px 12px;-webkit-overflow-scrolling:touch;}
+#composer{border-top:1px solid #E4DFD2;padding:10px 12px;background:#F7F4ED;display:flex;align-items:flex-end;gap:8px;flex-shrink:0;}
+#draft{flex:1;resize:none;border:1px solid #E4DFD2;border-radius:18px;padding:10px 14px;font-size:16px;font-family:inherit;background:#FFFDF9;outline:none;line-height:1.5;color:#2B2A28;max-height:140px;overflow-y:auto;}
+#send-btn{width:38px;height:38px;border-radius:50%;border:none;background:#E4DFD2;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+#send-btn.active{background:#FF6B4A;}
+.sep{text-align:center;margin:16px 0 12px;font-size:11px;color:#B8B2A4;}
+.bubble-wrap{display:flex;justify-content:flex-end;margin-bottom:8px;align-items:flex-end;gap:6px;}
+.del-btn{border:none;background:none;color:#C9C3B6;cursor:pointer;font-size:13px;padding:4px;display:none;}
+.bubble-wrap:hover .del-btn{display:block;}
+.bubble-inner{max-width:78%;display:flex;flex-direction:column;align-items:flex-end;}
+.bubble{display:flex;align-items:flex-start;gap:8px;border-radius:16px 16px 4px 16px;padding:9px 13px;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.bubble.memo{background:#FFE8DD;border:1px solid #FFD7C4;}
+.bubble.task{background:#FFFDF9;border:1px solid #E4DFD2;}
+.bubble.task.done{background:#EDEBE3;border-color:#DAD4C5;}
+.check-btn{border:none;background:none;cursor:pointer;font-size:18px;flex-shrink:0;padding:0;margin-top:1px;line-height:1;}
+.bubble-text{font-size:14.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+.bubble.task.done .bubble-text{text-decoration:line-through;color:#A8A296;}
+.bubble-time{font-size:10px;color:#C9C3B6;margin-top:3px;margin-right:2px;}
+.tag{color:#D4825C;font-weight:500;}
+#empty{text-align:center;color:#B8B2A4;font-size:13.5px;margin-top:60px;line-height:1.8;}
 </style>
 </head>
 <body>
-<div id="root"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-
-<noscript>JavaScriptを有効にしてください。</noscript>
-<div id="fallback-error" style="display:none; padding:20px; font-family:sans-serif; color:#2B2A28;">
-  読み込みに失敗しました。電波の良い場所でもう一度開いてみてください。
+<div id="header">
+  <div id="header-row">
+    <h1>ひとりごとメモ</h1>
+    <span id="counter">0/0 done</span>
+  </div>
+  <div id="filters">
+    <button class="filter-btn active" data-f="all">すべて</button>
+    <button class="filter-btn" data-f="tasks">タスク</button>
+    <button class="filter-btn" data-f="done">完了済み</button>
+  </div>
+</div>
+<div id="scroll"></div>
+<div id="composer">
+  <textarea id="draft" rows="1" placeholder="メモを書く… (●で始めるとタスクに)"></textarea>
+  <button id="send-btn">➤</button>
 </div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useCallback } = React;
+<script>
+const KEY = 'chatmemo:entries';
+let entries = [];
+let filter = 'all';
 
-// ── design tokens ──────────────────────────────────────────────
-// paper: #F7F4ED / ink: #2B2A28 / accent: #FF6B4A / done: #9CA89A / line: #E4DFD2
+try { entries = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) {}
 
-const STORAGE_KEY = "chatmemo:entries";
+function save() { localStorage.setItem(KEY, JSON.stringify(entries)); }
 
-function useEntries() {
-  const [entries, setEntries] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setEntries(JSON.parse(raw));
-    } catch (e) {
-      console.error("load failed", e);
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
-
-  const persist = useCallback((next) => {
-    setEntries(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      console.error("save failed", e);
-    }
-  }, []);
-
-  return { entries, persist, loaded };
-}
-
-function formatTime(ts) {
+function fmtTime(ts) {
   const d = new Date(ts);
-  return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDate(ts) {
+  const d = new Date(ts), t = new Date(), y = new Date();
+  y.setDate(t.getDate()-1);
+  const sd=(a,b)=>a.toDateString()===b.toDateString();
+  if(sd(d,t)) return '今日';
+  if(sd(d,y)) return '昨日';
+  return d.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+}
+function isTask(t){ return /^●/.test(t.trim()); }
+function stripMarker(t){ return t.replace(/^●\s*/,'').trim(); }
+function highlightTags(t){
+  return t.split(/(#[^\s#]+)/g).map(p=>
+    p.startsWith('#') ? `<span class="tag">${p}</span>` : p.replace(/</g,'&lt;')
+  ).join('');
 }
 
-function formatDateLabel(ts) {
-  const d = new Date(ts);
-  const today = new Date();
-  const yest = new Date();
-  yest.setDate(today.getDate() - 1);
-  const sameDay = (a, b) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "今日";
-  if (sameDay(d, yest)) return "昨日";
-  return d.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" });
-}
-
-function looksLikeTask(text) {
-  return /^●/.test(text.trim());
-}
-
-function stripTaskMarker(text) {
-  return text.replace(/^●\s*/, "").trim();
-}
-
-function ChatMemo() {
-  const { entries, persist, loaded } = useEntries();
-  const [draft, setDraft] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState(null);
-  const scrollRef = useRef(null);
-  const taRef = useRef(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [entries.length, loaded]);
-
-  const allTags = Array.from(
-    new Set(
-      entries.flatMap((e) => (e.text.match(/#[^\s#]+/g) || []).map((t) => t.slice(1)))
-    )
-  );
-
-  function handleSend() {
-    const raw = draft.trim();
-    if (!raw) return;
-    const isTask = looksLikeTask(raw);
-    const text = isTask ? stripTaskMarker(raw) : raw;
-    const entry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      text,
-      isTask,
-      done: false,
-      ts: Date.now(),
-    };
-    persist([...entries, entry]);
-    setDraft("");
-    if (taRef.current) taRef.current.style.height = "auto";
-  }
-
-  function toggleDone(id) {
-    persist(entries.map((e) => (e.id === id ? { ...e, done: !e.done } : e)));
-  }
-
-  function deleteEntry(id) {
-    persist(entries.filter((e) => e.id !== id));
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
-
-  function autoGrow(e) {
-    setDraft(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = Math.min(e.target.scrollHeight, 140) + "px";
-  }
-
-  const visible = entries.filter((e) => {
-    if (filter === "tasks" && !e.isTask) return false;
-    if (filter === "done" && !(e.isTask && e.done)) return false;
-    if (tagFilter && !e.text.includes(`#${tagFilter}`)) return false;
+function render() {
+  const scroll = document.getElementById('scroll');
+  const visible = entries.filter(e=>{
+    if(filter==='tasks' && !e.isTask) return false;
+    if(filter==='done' && !(e.isTask&&e.done)) return false;
     return true;
   });
+  const taskTotal = entries.filter(e=>e.isTask).length;
+  const doneTotal = entries.filter(e=>e.isTask&&e.done).length;
+  document.getElementById('counter').textContent = doneTotal+'/'+taskTotal+' done';
 
-  const groups = [];
-  let lastLabel = null;
-  for (const e of visible) {
-    const label = formatDateLabel(e.ts);
-    if (label !== lastLabel) {
-      groups.push({ type: "sep", label, id: "sep-" + e.id });
-      lastLabel = label;
-    }
-    groups.push({ type: "entry", entry: e });
+  if(visible.length===0){
+    scroll.innerHTML = '<div id="empty">まだ何もありません。<br>下から書き込んでみましょう。<br><span style="font-size:12px;color:#C9C3B6">「●」で始めるとタスクになります</span></div>';
+    return;
   }
 
-  const taskCount = entries.filter((e) => e.isTask).length;
-  const doneCount = entries.filter((e) => e.isTask && e.done).length;
-
-  return (
-    <div
-      style={{
-        fontFamily: "'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif",
-        background: "#F7F4ED",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        color: "#2B2A28",
-      }}
-    >
-      <div
-        style={{
-          padding: "16px 18px 12px",
-          borderBottom: "1px solid #E4DFD2",
-          background: "#F7F4ED",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <h1 style={{ fontSize: 19, fontWeight: 700, margin: 0, letterSpacing: "0.01em" }}>
-            ひとりごとメモ
-          </h1>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: "#9CA89A",
-            }}
-          >
-            {doneCount}/{taskCount} done
-          </span>
+  let html='', lastLabel='';
+  for(const e of visible){
+    const label = fmtDate(e.ts);
+    if(label!==lastLabel){ html+=`<div class="sep">${label}</div>`; lastLabel=label; }
+    const bubbleCls = 'bubble'+(e.isTask?' task':'  memo')+(e.isTask&&e.done?' done':'');
+    const checkBtn = e.isTask ? `<button class="check-btn" data-id="${e.id}">${e.done?'☑':'☐'}</button>` : '';
+    html+=`<div class="bubble-wrap">
+      <button class="del-btn" data-del="${e.id}">🗑</button>
+      <div class="bubble-inner">
+        <div class="${bubbleCls.trim()}">
+          ${checkBtn}
+          <span class="bubble-text">${highlightTags(e.text)}</span>
         </div>
-
-        <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-          {[
-            { key: "all", label: "すべて" },
-            { key: "tasks", label: "タスク" },
-            { key: "done", label: "完了済み" },
-          ].map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                fontSize: 12.5,
-                padding: "5px 12px",
-                borderRadius: 999,
-                border: "1px solid " + (filter === f.key ? "#FF6B4A" : "#E4DFD2"),
-                background: filter === f.key ? "#FF6B4A" : "transparent",
-                color: filter === f.key ? "#FFF8F3" : "#6B6A66",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-          {allTags.length > 0 && (
-            <div style={{ display: "flex", gap: 6, marginLeft: 4, flexWrap: "wrap" }}>
-              {allTags.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTagFilter(tagFilter === t ? null : t)}
-                  style={{
-                    fontSize: 12,
-                    padding: "5px 10px",
-                    borderRadius: 999,
-                    border: "1px solid " + (tagFilter === t ? "#2B2A28" : "#E4DFD2"),
-                    background: tagFilter === t ? "#2B2A28" : "transparent",
-                    color: tagFilter === t ? "#F7F4ED" : "#9C958A",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 3,
-                  }}
-                >
-                  #{t}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <span class="bubble-time">${e.isTask&&e.done?'✓ ':''}${fmtTime(e.ts)}</span>
       </div>
+    </div>`;
+  }
+  scroll.innerHTML = html;
+  scroll.scrollTop = scroll.scrollHeight;
 
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px", WebkitOverflowScrolling: "touch" }}>
-        {!loaded ? (
-          <div style={{ textAlign: "center", color: "#B8B2A4", fontSize: 13, marginTop: 40 }}>
-            読み込み中…
-          </div>
-        ) : groups.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              color: "#B8B2A4",
-              fontSize: 13.5,
-              marginTop: 60,
-              lineHeight: 1.8,
-            }}
-          >
-            まだ何もありません。
-            <br />
-            下から書き込んでみましょう。
-            <br />
-            <span style={{ fontSize: 12, color: "#C9C3B6" }}>
-              「●」で始めるとタスクになります
-            </span>
-          </div>
-        ) : (
-          groups.map((g) =>
-            g.type === "sep" ? (
-              <div
-                key={g.id}
-                style={{
-                  textAlign: "center",
-                  margin: "18px 0 14px",
-                  fontSize: 11.5,
-                  color: "#B8B2A4",
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}
-              >
-                {g.label}
-              </div>
-            ) : (
-              <Bubble
-                key={g.entry.id}
-                entry={g.entry}
-                onToggle={() => toggleDone(g.entry.id)}
-                onDelete={() => deleteEntry(g.entry.id)}
-              />
-            )
-          )
-        )}
-      </div>
-
-      <div
-        style={{
-          borderTop: "1px solid #E4DFD2",
-          padding: "10px 12px",
-          background: "#F7F4ED",
-          display: "flex",
-          alignItems: "flex-end",
-          gap: 8,
-        }}
-      >
-        <textarea
-          ref={taRef}
-          value={draft}
-          onChange={autoGrow}
-          onKeyDown={handleKeyDown}
-          placeholder="メモを書く… (●で始めるとタスクに)"
-          rows={1}
-          style={{
-            flex: 1,
-            resize: "none",
-            border: "1px solid #E4DFD2",
-            borderRadius: 18,
-            padding: "10px 14px",
-            fontSize: 16, /* 16px avoids iOS auto-zoom on focus */
-            fontFamily: "inherit",
-            background: "#FFFDF9",
-            outline: "none",
-            lineHeight: 1.5,
-            color: "#2B2A28",
-            maxHeight: 140,
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={!draft.trim()}
-          aria-label="送信"
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            border: "none",
-            background: draft.trim() ? "#FF6B4A" : "#E4DFD2",
-            color: "#FFF8F3",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: draft.trim() ? "pointer" : "default",
-            flexShrink: 0,
-            fontSize: 16,
-          }}
-        >
-          ➤
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Bubble({ entry, onToggle, onDelete }) {
-  const [hover, setHover] = useState(false);
-  const parts = entry.text.split(/(#[^\s#]+)/g);
-
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onTouchStart={() => setHover(true)}
-      style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        marginBottom: 8,
-        gap: 6,
-        alignItems: "flex-end",
-      }}
-    >
-      {hover && (
-        <button
-          onClick={onDelete}
-          aria-label="削除"
-          style={{
-            border: "none",
-            background: "none",
-            color: "#C9C3B6",
-            cursor: "pointer",
-            padding: 4,
-            fontSize: 14,
-          }}
-        >
-          🗑
-        </button>
-      )}
-
-      <div style={{ maxWidth: "78%", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 8,
-            background: entry.isTask ? (entry.done ? "#EDEBE3" : "#FFFDF9") : "#FFE8DD",
-            border: entry.isTask
-              ? "1px solid " + (entry.done ? "#DAD4C5" : "#E4DFD2")
-              : "1px solid #FFD7C4",
-            borderRadius: "16px 16px 4px 16px",
-            padding: entry.isTask ? "9px 12px" : "9px 13px",
-            boxShadow: "0 1px 2px rgba(43,42,40,0.04)",
-          }}
-        >
-          {entry.isTask && (
-            <button
-              onClick={onToggle}
-              aria-label={entry.done ? "未完了に戻す" : "完了にする"}
-              style={{
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                padding: 0,
-                marginTop: 1,
-                color: entry.done ? "#9CA89A" : "#C9C3B6",
-                flexShrink: 0,
-                fontSize: 17,
-                lineHeight: 1,
-              }}
-            >
-              {entry.done ? "☑" : "☐"}
-            </button>
-          )}
-          <span
-            style={{
-              fontSize: 14.5,
-              lineHeight: 1.55,
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              color: entry.isTask && entry.done ? "#A8A296" : "#2B2A28",
-              textDecoration: entry.isTask && entry.done ? "line-through" : "none",
-              textDecorationColor: "#C9C3B6",
-            }}
-          >
-            {parts.map((p, i) =>
-              p.startsWith("#") ? (
-                <span key={i} style={{ color: "#D4825C", fontWeight: 500 }}>
-                  {p}
-                </span>
-              ) : (
-                p
-              )
-            )}
-          </span>
-        </div>
-        <span
-          style={{
-            fontSize: 10.5,
-            color: "#C9C3B6",
-            marginTop: 3,
-            marginRight: 2,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
-          {entry.isTask && entry.done ? "✓ " : ""}
-          {formatTime(entry.ts)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<ChatMemo />);
-</script>
-
-<script>
-  window.addEventListener("error", function (e) {
-    var el = document.getElementById("fallback-error");
-    if (el && document.getElementById("root") && document.getElementById("root").childElementCount === 0) {
-      el.style.display = "block";
-    }
-  });
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch((e) => console.error("SW failed", e));
+  scroll.querySelectorAll('.check-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.id;
+      const e=entries.find(x=>x.id===id);
+      if(e){ e.done=!e.done; save(); render(); }
     });
-  }
+  });
+  scroll.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      entries=entries.filter(x=>x.id!==btn.dataset.del);
+      save(); render();
+    });
+  });
+}
+
+// filter buttons
+document.getElementById('filters').addEventListener('click',e=>{
+  const btn=e.target.closest('.filter-btn');
+  if(!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filter=btn.dataset.f;
+  render();
+});
+
+// draft auto-grow
+const draft = document.getElementById('draft');
+const sendBtn = document.getElementById('send-btn');
+draft.addEventListener('input',()=>{
+  draft.style.height='auto';
+  draft.style.height=Math.min(draft.scrollHeight,140)+'px';
+  sendBtn.classList.toggle('active', draft.value.trim().length>0);
+});
+draft.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); }
+});
+sendBtn.addEventListener('click', send);
+
+function send(){
+  const raw=draft.value.trim();
+  if(!raw) return;
+  const task=isTask(raw);
+  const text=task?stripMarker(raw):raw;
+  entries.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),text,isTask:task,done:false,ts:Date.now()});
+  save();
+  draft.value='';
+  draft.style.height='auto';
+  sendBtn.classList.remove('active');
+  render();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+render();
 </script>
 </body>
 </html>
